@@ -1,6 +1,6 @@
 # GitHub 与 Maven 发布准备
 
-**2026-09-13 发布调整：用户已授权推送到其 GitHub，已建立私有源码仓库 `https://github.com/CarbonFace/mcp-spring-bridge`，保持 Cogistra / MIT 归属。当前发布分支为 `codex/mcp-controller-adapter`；源码提交推送结果在本文后续记录。本文原“等待用户上传”描述为历史状态；Maven 制品仍未发布。**
+**2026-09-13 发布调整：用户已授权推送到其 GitHub，私有源码仓库为 `https://github.com/CarbonFace/mcp-spring-bridge`，保持 Cogistra / MIT 归属。当前发布分支为 `codex/mcp-controller-adapter`，首次代码提交 `c037bf575f6460abcbd88e1caeebcf5b2d44b034` 已推送并核对远程一致。原“等待用户上传”描述为历史状态；Maven 制品仍未发布。**
 
 记录日期：2026-09-12。用户确认：公共组件由 Cogistra 维护，Maven 组织标识为 `com.cogistra`，Java 包为 `com.cogistra.mcpbridge`，采用 MIT 许可证。仓库计划由用户后续上传 GitHub。
 
@@ -35,3 +35,5 @@
 2026-09-12 的未发布状态为历史记录。2026-09-13 用户批准改为上传本人 GitHub，已建立上述私有源码仓库；本次先核验全工程，再提交推送。Maven 构件仍未远程发布，没有部署服务或对正式/旧系统数据库写入。
 
 2026-09-13 22:29（Asia/Shanghai），Java 17 执行 `mvn --batch-mode --no-transfer-progress verify` 成功：core 11、files 6、starter 33、authorization-server 6、sample 1，共 57 项通过，files 另有 1 项 Windows 符号链接权限跳过，失败和错误为 0；各模块格式检查通过。日志 `target-prepublish-20260913.log`。starter 与此前已安装并由宿主验证的 SHA-256 均为 `16065D5D56AFAC642927CF69B87377B34A14F05388D3728C5744312009ADF11D`。GitHub 工作流仅构建和隔离验证，不部署或发布 Maven 制品。
+
+首次代码提交的 [GitHub 验证](https://github.com/CarbonFace/mcp-spring-bridge/actions/runs/34763064421) 已完成，Java 17/21 × Ubuntu/Windows 四个任务全部成功。该结果只证明公共工程的隔离构建和验证；没有部署匠心服务、发布 Maven Central 制品或验证真实业务数据库。此后仅补充本段发布记录，不重复执行代码未变的 CI。
