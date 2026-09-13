@@ -1,0 +1,18 @@
+server:
+  address: 127.0.0.1
+  port: 8091
+spring:
+  servlet:
+    multipart:
+      max-file-size: 128KB
+      max-request-size: 256KB
+mcp:
+  bridge:
+    enabled: false
+    storage: ${MCP_SAMPLE_STORAGE:${java.io.tmpdir}/mcp-bridge-sample}
+    authorization:
+      enabled: false
+    files:
+      enabled: false
+sample:
+  public-base-url: http://127.0.0.1:8091

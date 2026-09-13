@@ -1,0 +1,9 @@
+<!DOCTYPE html><html lang="en" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{layout :: head('Your connections')}"></head><body><main>
+<div class="brand" th:text="${brand}"></div><h1>Your connections</h1><p class="muted">Revoking a connection immediately stops its current tokens.</p>
+<p th:if="${#lists.isEmpty(grants)}">You have no active connections.</p>
+<section class="grant" th:each="grant : ${grants}"><h2 th:text="${grant.client}"></h2><p th:text="${grant.scopes}"></p>
+<p class="muted">Authorization ends: <span th:text="${grant.expires}"></span></p>
+<form method="post" th:action="${base + '/grants/revoke'}"><input type="hidden" th:name="${csrfName}" th:value="${csrf}"><input type="hidden" name="id" th:value="${grant.id}"><button type="submit" class="secondary">Revoke connection</button></form></section>
+<nav aria-label="Connections pages"><a th:if="${page > 0}" th:href="${base + '/grants?page=' + (page - 1)}">Previous</a> <a th:if="${hasNext}" th:href="${base + '/grants?page=' + (page + 1)}">Next</a></nav>
+<form method="post" th:action="${base + '/logout'}"><input type="hidden" th:name="${csrfName}" th:value="${csrf}"><button type="submit" class="secondary">Sign out</button></form>
+</main></body></html>

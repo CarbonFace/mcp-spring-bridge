@@ -1,0 +1,39 @@
+sample:
+  public-base-url: http://127.0.0.1:${MCP_DEMO_PORT:8091}
+  demo:
+    alice-password: ${MCP_DEMO_ALICE_PASSWORD}
+    bob-password: ${MCP_DEMO_BOB_PASSWORD}
+server:
+  address: 127.0.0.1
+  port: ${MCP_DEMO_PORT:8091}
+mcp:
+  bridge:
+    enabled: true
+    name: cogistra-local-demo
+    resource: http://127.0.0.1:${MCP_DEMO_PORT:8091}/mcp
+    authorization-servers:
+      - http://127.0.0.1:${MCP_DEMO_PORT:8091}/mcp-bridge/oauth
+    authorization:
+      enabled: true
+      development-loopback: true
+      issuer: http://127.0.0.1:${MCP_DEMO_PORT:8091}/mcp-bridge/oauth
+      resource: http://127.0.0.1:${MCP_DEMO_PORT:8091}/mcp
+      brand: Cogistra Local Demo
+      signing-jwk: ${MCP_DEMO_SIGNING_JWK}
+      storage-key: ${MCP_DEMO_STORAGE_KEY}
+      storage-directory: ${mcp.bridge.storage}/authorization
+      clients:
+        - id: sample-desktop
+          name: Local MCP Client
+          redirect-uris:
+            - http://127.0.0.1:64599/callback
+          scopes:
+            - sample:read
+            - sample:write
+    files:
+      enabled: true
+      directory: ${mcp.bridge.storage}/files
+      max-file-bytes: 131072
+      owner-quota-bytes: 1048576
+      total-quota-bytes: 8388608
+      max-chunk-bytes: 65536

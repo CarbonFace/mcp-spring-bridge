@@ -1,0 +1,12 @@
+<!DOCTYPE html><html lang="en" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{layout :: head('Review connection')}"></head><body><main>
+<div class="brand" th:text="${brand}"></div><h1>Review this connection</h1>
+<p><strong th:text="${client}"></strong> wants to connect as <strong th:text="${displayName}"></strong>.</p>
+<p class="muted">Service: <span th:text="${resource}"></span></p>
+<form id="approve" method="post" th:action="${base + '/authorize'}"><input type="hidden" th:name="${csrfName}" th:value="${csrf}">
+<input type="hidden" name="client_id" th:value="${clientId}"><input type="hidden" name="state" th:value="${state}">
+<label th:each="scope : ${scopes}"><input type="checkbox" name="scope" th:value="${scope}" checked> <span th:text="${scope}"></span></label>
+<button type="submit">Allow selected access</button></form>
+<form id="decline" method="post" th:action="${base + '/authorize'}"><input type="hidden" th:name="${csrfName}" th:value="${csrf}">
+<input type="hidden" name="client_id" th:value="${clientId}"><input type="hidden" name="state" th:value="${state}"><button type="submit" class="secondary">Decline</button></form>
+<p class="muted">Your existing permissions still apply. You can revoke this connection at any time.</p>
+</main></body></html>

@@ -1,0 +1,8 @@
+<!DOCTYPE html><html lang="en" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{layout :: head('Sign in')}"></head><body><main>
+<div class="brand" th:text="${brand}"></div><h1>Connect your account</h1><p>Sign in with your existing account to review this client's access.</p>
+<p class="message" role="status" th:if="${!#strings.isEmpty(message)}" th:text="${message}"></p>
+<form method="post" th:action="${base + '/login'}"><input type="hidden" th:name="${csrfName}" th:value="${csrf}">
+<label for="username">Username</label><input id="username" name="username" autocomplete="username" maxlength="200" required autofocus>
+<label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" maxlength="1024" required>
+<button type="submit">Sign in</button></form><p class="muted">Your password stays with this service and is never shared with the client.</p>
+</main></body></html>

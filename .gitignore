@@ -1,0 +1,14 @@
+**/target/
+.idea/
+*.iml
+.local/
+.mcp-bridge-files/
+*.jwk
+*.pem
+*.key
+*.p12
+*.pfx
+.env
+.env.*
+*.log
+**/__pycache__/

@@ -1,0 +1,2 @@
+com.cogistra.mcpbridge.boot.BridgeAutoConfiguration
+com.cogistra.mcpbridge.boot.BridgeHostSecurityConfiguration
