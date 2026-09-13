@@ -1,6 +1,6 @@
 # GitHub 与 Maven 发布准备
 
-**2026-09-13 发布调整：用户已授权推送到其 GitHub，私有源码仓库为 `https://github.com/CarbonFace/mcp-spring-bridge`，保持 Cogistra / MIT 归属。当前发布分支为 `codex/mcp-controller-adapter`，首次代码提交 `c037bf575f6460abcbd88e1caeebcf5b2d44b034` 已推送并核对远程一致。原“等待用户上传”描述为历史状态；Maven 制品仍未发布。**
+**2026-09-13 发布调整：用户已授权推送到其 GitHub，源码仓库为 `https://github.com/CarbonFace/mcp-spring-bridge`，保持 Cogistra / MIT 归属。初始私有，随后按用户要求改为公开，方便同事获取源码构建；已通过不带认证的 GitHub API 请求验证可访问且 `private=false`。当前发布分支为 `codex/mcp-controller-adapter`，首次代码提交 `c037bf575f6460abcbd88e1caeebcf5b2d44b034` 已推送并核对远程一致。Maven 制品仍未发布，获取源码后仍须先执行本地 install。**
 
 记录日期：2026-09-12。用户确认：公共组件由 Cogistra 维护，Maven 组织标识为 `com.cogistra`，Java 包为 `com.cogistra.mcpbridge`，采用 MIT 许可证。仓库计划由用户后续上传 GitHub。
 

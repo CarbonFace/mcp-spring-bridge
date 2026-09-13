@@ -4,7 +4,7 @@ A Cogistra library for exposing selected Spring MVC endpoints and Spring AI MCP 
 
 **Status:** `0.1.0-SNAPSHOT`, implemented and locally verified. The artifacts are not published to Maven Central. The repository is licensed under [MIT](LICENSE), copyright Cogistra. See [verification](docs/verification.md) for evidence and remaining acceptance work.
 
-Source repository: [CarbonFace/mcp-spring-bridge](https://github.com/CarbonFace/mcp-spring-bridge), initially private, branch `codex/mcp-controller-adapter`. Repository access and Maven artifact publication are separate; authorized builders currently install the pinned source locally before building downstream applications. See [release instructions](docs/releasing.md).
+Source repository: [CarbonFace/mcp-spring-bridge](https://github.com/CarbonFace/mcp-spring-bridge), public, branch `codex/mcp-controller-adapter`. Repository access and Maven artifact publication are separate; builders currently install the pinned source locally before building downstream applications. See [release instructions](docs/releasing.md).
 
 ## What it provides
 
