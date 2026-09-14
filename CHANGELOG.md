@@ -4,7 +4,8 @@
 
 - Accept the standard `notifications/initialized` notification in the stateless transport after revalidating the current identity. Preserve HTTP 202 with no response body and avoid the SDK 0.18.3 missing-handler warning; all other notifications still reach the SDK.
 - Add Servlet regressions for authenticated initialization, unchanged discovery, unknown-notification diagnostics, and an account revoked between request capture and notification processing. The latter must fail instead of acknowledging an expired identity.
-- No configuration, log-level, business-permission or database changes. This remains `0.1.0-SNAPSHOT`; local verification, installation and downstream refresh instructions are recorded in [verification](docs/verification.md#2026-09-14-标准初始化通知告警修复). The user authorized GitHub source delivery on `codex/fix-mcp-initialized-notification`; Maven artifacts have not been remotely published and no application has been deployed.
+- No configuration, log-level, business-permission or database changes. This remains `0.1.0-SNAPSHOT`; local verification, installation and downstream refresh instructions are recorded in [verification](docs/verification.md#2026-09-14-标准初始化通知告警修复). GitHub verification passed Java 17/21 on Linux/Windows for fix `f66a7c4`.
+- Established `master` as the public default delivery branch containing the fix, following the user's request to make ordinary clones receive it. Earlier development branches remain available. Maven artifacts have not been remotely published and no application has been deployed; downstream builders still install the component from source.
 
 ## 0.1.0-SNAPSHOT — 2026-09-13 extension
 

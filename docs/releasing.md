@@ -1,6 +1,25 @@
 # GitHub 与 Maven 发布准备
 
-**2026-09-13 发布调整：用户已授权推送到其 GitHub，源码仓库为 `https://github.com/CarbonFace/mcp-spring-bridge`，保持 Cogistra / MIT 归属。初始私有，随后按用户要求改为公开，方便同事获取源码构建；已通过不带认证的 GitHub API 请求验证可访问且 `private=false`。当前发布分支为 `codex/mcp-controller-adapter`，首次代码提交 `c037bf575f6460abcbd88e1caeebcf5b2d44b034` 已推送并核对远程一致。Maven 制品仍未发布，获取源码后仍须先执行本地 install。**
+## 当前源码交付入口（2026-09-14）
+
+用户要求公共组件通过 `master` 提供给其他接入者。本仓库公开，默认交付分支为 [`master`](https://github.com/CarbonFace/mcp-spring-bridge/tree/master)，包含已验证的初始化通知修复 `f66a7c410ed0ec45ac41192944bd6e53c8c5356a`。修复从原默认分支 `codex/mcp-controller-adapter` 快进接入完整历史；原开发分支保留，不改写或删除历史。普通克隆不再要求指定某个修复分支。
+
+```shell
+git clone https://github.com/CarbonFace/mcp-spring-bridge.git
+cd mcp-spring-bridge
+git rev-parse HEAD
+mvn install
+```
+
+使用 Java 17 或 21、Maven 3.8.8 或更高版本，记录实际源码提交号；`install` 执行隔离验证并将组件安装到当前构建机器的 Maven 仓库。其他构建机器也须安装同一份源码。已有旧分支工作区须先保护本地改动，再获取并显式切换到 `master`；仅在旧分支运行 `pull` 不会切换交付入口。
+
+当前仍为 `com.cogistra:mcp-bridge-spring-boot-starter:0.1.0-SNAPSHOT`，**未发布远程 Maven 制品**。这意味着源码已可供其他 Spring Boot 项目构建接入，但还不能只填写依赖坐标就从 Maven Central 下载。宿主仍需配置真实身份验证和业务权限；组件的隔离验证不替代宿主的真实环境验收。下游更新同名 SNAPSHOT 后必须重新打包并部署应用才会在运行环境生效。
+
+修复提交的 [GitHub 验证](https://github.com/CarbonFace/mcp-spring-bridge/actions/runs/34843607883) 已全部通过：Java 17/21 × Ubuntu/Windows 四个任务成功。调整默认分支和使用说明未改变运行时代码；`master` 上后续运行结果按对应提交单独核验。本次未发布 Maven、部署服务或操作业务数据库。
+
+## 历史发布记录
+
+**2026-09-13 发布调整（分支入口已由上方 2026-09-14 规则替代）：用户已授权推送到其 GitHub，源码仓库为 `https://github.com/CarbonFace/mcp-spring-bridge`，保持 Cogistra / MIT 归属。初始私有，随后按用户要求改为公开，方便同事获取源码构建；已通过不带认证的 GitHub API 请求验证可访问且 `private=false`。当时发布分支为 `codex/mcp-controller-adapter`，首次代码提交 `c037bf575f6460abcbd88e1caeebcf5b2d44b034` 已推送并核对远程一致。Maven 制品未发布，获取源码后仍须先执行本地 install。**
 
 记录日期：2026-09-12。用户确认：公共组件由 Cogistra 维护，Maven 组织标识为 `com.cogistra`，Java 包为 `com.cogistra.mcpbridge`，采用 MIT 许可证。仓库计划由用户后续上传 GitHub。
 
@@ -13,7 +32,9 @@
 - 发布附加包配置生成源代码与 Javadoc；不会在普通构建中上传任何仓库。
 - 本地 Java 17 构建已生成四个公共模块的运行包、源码包和 Javadoc 包；已检查运行包与源码包的 `META-INF/LICENSE`，运行包没有下游私有业务类。可复现证据见 [验证记录](verification.md)。
 
-## 上传 GitHub
+## 首次上传 GitHub 的历史准备流程
+
+以下为首次发布前的步骤，仓库现已公开；当前获取入口以上方 `master` 说明为准，不需要重新创建仓库。
 
 1. 由 Cogistra 创建目标 GitHub 仓库，确定真实组织名与仓库地址。本文不猜测 GitHub 账号或地址。
 2. 在本地审阅 `git status` 和忽略规则。仅纳入源码、文档、构建配置；`.local`、`target`、账户口令、签名/加密密钥不得上传。
@@ -30,7 +51,7 @@
 
 本地重复安装同一 SNAPSHOT 后，下游的增量 `package` 可能沿用旧应用包。验证接入时应强制重建下游 jar（例如 `mvn -Dmaven.jar.forceCreation=true -DskipTests package`），再比对应用包内 `BOOT-INF/lib` 的组件与当前本地仓库制品；不能仅根据打包命令返回成功判断新依赖已进入交付包。正式发布应使用可追踪的固定版本。
 
-## 当前执行边界
+## 首次发布执行记录（2026-09-13）
 
 2026-09-12 的未发布状态为历史记录。2026-09-13 用户批准改为上传本人 GitHub，已建立上述私有源码仓库；本次先核验全工程，再提交推送。Maven 构件仍未远程发布，没有部署服务或对正式/旧系统数据库写入。
 

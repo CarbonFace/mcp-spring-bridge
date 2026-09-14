@@ -130,17 +130,17 @@ mvn -pl mcp-bridge-spring-boot-starter spotless:apply
 mvn -pl mcp-bridge-spring-boot-starter -am -Dtest=ServletMcpIntegrationTest,StarterDefaultSecurityIntegrationTest,ProtocolNamingIntegrationTest -Dsurefire.failIfNoSpecifiedTests=false -Dmaven.jar.forceCreation=true install
 ```
 
-**本次发布状态及 SNAPSHOT 更新方式（2026-09-14 用户确认）**：本机验证完成后，用户明确要求推送远程 GitHub，本次源码交付分支为 [`codex/fix-mcp-initialized-notification`](https://github.com/CarbonFace/mcp-spring-bridge/tree/codex/fix-mcp-initialized-notification)。本次没有合并原发布分支 `codex/mcp-controller-adapter`，也未发布远程 Maven 制品或部署。既有公开基线 `29864a2` 不含本修复，不能把发送方提交号或旧基线当作修复版本。沿用[源码构建分发](releasing.md)：下游机器取得本次修复分支源码后，须记录实际提交号并执行上述 `install`，再重新构建宿主；仅加 `-U` 不能从未发布的远程 Maven 仓库取到本修复，无需删除整个 Maven 缓存或另建发布设施。
+**本次发布状态及 SNAPSHOT 更新方式（2026-09-14 用户后续确认）**：修复最初推送到 `codex/fix-mcp-initialized-notification`，提交 `f66a7c410ed0ec45ac41192944bd6e53c8c5356a` 已核对远程一致，其 [GitHub 验证](https://github.com/CarbonFace/mcp-spring-bridge/actions/runs/34843607883) 在 Java 17/21 × Ubuntu/Windows 四项全部通过。用户随后要求独立组件通过 `master` 正常交付，因此从原默认分支快进接入该修复并将 [`master`](https://github.com/CarbonFace/mcp-spring-bridge/tree/master) 作为默认交付入口，旧开发分支保留；先前“仅修复分支可获取”的交付状态由本条替代。未发布远程 Maven 制品或部署。旧基线 `29864a2` 不含本修复，不能把发送方提交号或旧基线当作修复版本。沿用[源码构建分发](releasing.md)：下游机器取得 `master` 源码后，须记录实际提交号并执行上述 `install`，再重新构建宿主；仅加 `-U` 不能从未发布的远程 Maven 仓库取到本修复，无需删除整个 Maven 缓存或另建发布设施。
 
 新工作区获取入口（已有工作区须先保护未提交内容，不直接覆盖）：
 
 ```shell
-git clone --branch codex/fix-mcp-initialized-notification --single-branch https://github.com/CarbonFace/mcp-spring-bridge.git
+git clone https://github.com/CarbonFace/mcp-spring-bridge.git
 cd mcp-spring-bridge
 git rev-parse HEAD
 ```
 
-将实际提交号与维护者本次交付的修复提交核对，再执行本节的组件安装命令。源码发布与 Maven 远程发布、宿主重新打包和部署分别核验；GitHub 自动验证的实际结果以该提交对应运行记录为准，不使用此前基线的 CI 结果替代。
+确认当前 `master` 包含上述修复提交，再执行本节的组件安装命令。源码发布与 Maven 远程发布、宿主重新打包和部署分别核验；GitHub 自动验证的实际结果以该提交对应运行记录为准，不使用此前基线的 CI 结果替代。已有工作区仍停留在旧 `codex/*` 分支时，需保护本地修改后显式切换至 `master`。
 
 下游构建时强制重新创建应用 JAR，例如 `mvn -DskipTests -Dmaven.jar.forceCreation=true package`（测试应另按宿主规则完成），再比对 `BOOT-INF/lib` 中组件与本地仓库 JAR 的 SHA-256。部署新包/镜像后，才由真实授权客户端核验 `initialize → notifications/initialized → tools/list` 和对应日志；仅执行握手及只读调用，不构造正式业务数据。异常时按宿主原发布流程回退上一应用版本。本次无需数据库迁移、配置调整或业务数据回滚。
 

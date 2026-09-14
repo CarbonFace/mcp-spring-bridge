@@ -2,9 +2,9 @@
 
 A Cogistra library for exposing selected Spring MVC endpoints and Spring AI MCP declarations through one authenticated MCP server.
 
-**Status:** `0.1.0-SNAPSHOT`, implemented and locally verified. The artifacts are not published to Maven Central. The repository is licensed under [MIT](LICENSE), copyright Cogistra. See [verification](docs/verification.md) for evidence and remaining acceptance work.
+**Status:** `0.1.0-SNAPSHOT`, verified locally and on GitHub with Java 17/21 on Linux/Windows, including the initialization notification fix. The artifacts are not published to Maven Central. The repository is licensed under [MIT](LICENSE), copyright Cogistra. See [verification](docs/verification.md) for evidence and remaining acceptance work.
 
-Source repository: [CarbonFace/mcp-spring-bridge](https://github.com/CarbonFace/mcp-spring-bridge), public, branch `codex/mcp-controller-adapter`. Repository access and Maven artifact publication are separate; builders currently install the pinned source locally before building downstream applications. See [release instructions](docs/releasing.md).
+Source repository: [CarbonFace/mcp-spring-bridge](https://github.com/CarbonFace/mcp-spring-bridge), public, default delivery branch [`master`](https://github.com/CarbonFace/mcp-spring-bridge/tree/master). This branch includes initialization fix `f66a7c410ed0ec45ac41192944bd6e53c8c5356a`; the earlier `codex/*` branches remain as development history. Repository access and Maven artifact publication are separate; builders currently install the pinned source locally before building downstream applications. See [release instructions](docs/releasing.md).
 
 ## What it provides
 
@@ -37,9 +37,13 @@ Spring Boot 4 / Spring AI 2, WebFlux and bidirectional session callbacks are not
 Use Maven 3.8.8 or later and a supported JDK:
 
 ```shell
-mvn verify
+git clone https://github.com/CarbonFace/mcp-spring-bridge.git
+cd mcp-spring-bridge
+git rev-parse HEAD
 mvn install
 ```
+
+Record the source commit for reproducible downstream builds. `mvn install` runs isolated tests and installs the component artifacts into this machine's configured Maven repository. Another build machine must install the same source before it can resolve the dependency; the coordinates alone cannot download an unpublished artifact. An existing checkout on `codex/mcp-controller-adapter` must explicitly switch to `master` after protecting local changes.
 
 Tests use temporary files, synthetic identities and local servlet applications. They require no company account, business database or deployed server. The sample is excluded from Maven installation/deployment; its source remains in this repository.
 
