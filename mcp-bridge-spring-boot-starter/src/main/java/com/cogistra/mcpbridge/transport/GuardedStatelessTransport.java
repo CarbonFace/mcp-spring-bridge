@@ -88,6 +88,9 @@ public final class GuardedStatelessTransport implements McpStatelessServerTransp
             return Mono.defer(
                 () -> {
                   identities.resolve(context);
+                  // Stateless handshakes have no session transition; authenticate before accepting.
+                  if (McpSchema.METHOD_NOTIFICATION_INITIALIZED.equals(notification.method()))
+                    return Mono.empty();
                   return handler.handleNotification(context, notification);
                 });
           }

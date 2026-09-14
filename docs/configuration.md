@@ -37,6 +37,14 @@ URL 为示例占位值。公开 URL 要求 HTTPS；开发仅允许 loopback HTTP
 
 默认发现路径为 `/.well-known/oauth-protected-resource` 及带资源路径后缀的变体。存在 servlet context-path 或反向代理路径前缀时，必须将公网发现 URL 路由到正确应用路径，或由宿主链和发现端点接管。配置的 resource 是客户端看到的外部 URI，不能用内部容器地址替代。
 
+## 无状态初始化通知（2026-09-14）
+
+按用户要求修复交接文档所述的初始化告警。适用场景是已获授权的客户端完成 `initialize` 后发送没有请求 ID 的 `notifications/initialized`，随后读取 `tools/list`。该握手不保存业务事实、不派发业务责任；无身份或无效令牌仍由安全链返回 HTTP 401。
+
+此前 `GuardedStatelessTransport.handleNotification` 把标准通知交给 SDK 0.18.3 的无状态 handler；请求虽返回 HTTP 202，SDK 仍记录 `Missing handler for notification type: notifications/initialized`，容易被误判为初始化失败。现在在原有 `Mono.defer` 内先执行 `identities.resolve(context)` 复核当前身份，再仅对 `McpSchema.METHOD_NOTIFICATION_INITIALIZED` 返回 `Mono.empty()`，保持 HTTP 202 和空正文，不生成 JSON-RPC 响应对象；身份复核失败继续沿原异常路径拒绝。
+
+其他通知仍交给 SDK，未知通知诊断和异常不被吞掉，工具发现与权限过滤不变。本处理仅适用于当前无状态 Streamable HTTP；有状态服务仍须执行其初始化状态转换。没有增加配置或改变默认值、日志级别、业务开关及宿主权限。需使用修复后的组件重新构建并部署宿主应用才生效；同名 SNAPSHOT 的更新方式和本轮实际验证见[验证记录](verification.md#2026-09-14-标准初始化通知告警修复)。
+
 ## 主要配置
 
 | 配置（`mcp.bridge.` 前缀） | 默认值 / 语义 |

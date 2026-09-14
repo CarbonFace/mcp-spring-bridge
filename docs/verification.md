@@ -102,6 +102,48 @@ mvn.cmd -pl mcp-bridge-spring-boot-starter -am -Dtest=GuidanceMcpIntegrationTest
 
 构建产物和本机仓库内 starter JAR 的 SHA-256 均为 `16065D5D56AFAC642927CF69B87377B34A14F05388D3728C5744312009ADF11D`。本轮没有重跑无修改的 OAuth 授权模块、独立网络样例或业务数据库。没有提交、远程发布、部署、真实客户端安装或员工业务验收；不能将这些隔离验证写成 GPT 已自动安装或已证明真人逐笔确认。
 
+## 2026-09-14 标准初始化通知告警修复
+
+用户要求修复交接材料中的公共组件初始化告警。修复基于源码 `29864a2d01e531e9675edc2541038f63ab573763`，在 `codex/fix-mcp-initialized-notification` 分支实施；发送方提交号和既有测试结果仅作定位参考，本段只记录本机新执行的证据。
+
+场景与行为见[无状态初始化通知](configuration.md#无状态初始化通知2026-09-14)。运行入口为 `GuardedStatelessTransport.handleNotification`，回归入口为 `ServletMcpIntegrationTest.initializedNotificationIsAuthenticatedAndDoesNotWarnOrChangeDiscovery`。使用现有合成账号、内存事实和临时目录，经实际 Servlet、安全链与 SDK 完成初始化和通知，不访问任何宿主业务数据库。
+
+本轮新增两个真实 Servlet 场景，防止以下故障：
+
+- 标准通知误报初始化异常：匿名和无效令牌仍返回 401，有效身份在 `initialize → notifications/initialized → tools/list` 中收到 202 空正文，通知前后工具目录相同；标准通知不再产生缺少 handler 告警，未知通知仍产生 SDK 诊断并保持 202 空正文，业务写入为零。
+- 请求捕获后账号被撤销，却仍被初始化 no-op 接受：合成宿主在首次成功身份解析后立即撤销账号，通知处理时必须重新核验并拒绝。当前 SDK 0.18.3 将该处理异常映射为 HTTP 500；这与安全链前置拒绝的 401 不同，本修复保留其既有错误处理，不把失败正文误当作成功 202 的空正文契约。该场景同样零业务写入。
+
+2026-09-14，Java 17.0.19、Maven 3.8.8，使用本机原有 Maven 仓库完成：
+
+1. **修复前复现**：只增加标准通知场景，旧运行时代码返回 202 并打印 `Missing handler for notification type: notifications/initialized`，日志断言失败。证据 `target-initialized-before-20260914.log`。
+2. **校验顺序反向验证**：临时把 no-op 放到 `identities.resolve(context)` 前，新增撤销场景收到 202 而非预期 500，准确失败；随后恢复正确源码。证据 `target-initialized-auth-order-20260914.log`。
+3. **修复后定向回归**：20:00，`ServletMcpIntegrationTest` 10 项、`StarterDefaultSecurityIntegrationTest` 1 项、`ProtocolNamingIntegrationTest` 1 项，共 **12 项通过，0 失败、0 错误、0 跳过**。报告在 starter 的 `target/surefire-reports/`，日志 `target-initialized-final-20260914.log`。中间发现撤销异常原本有 SDK 错误正文，已纠正该新增测试中的空正文误判，未修改运行时错误行为；该轮中间日志为 `target-initialized-sdk-error-body-20260914.log`。
+4. **格式与本地安装**：上述 12 项通过后的 verify 阶段仅因新增两行的 LF/CRLF 格式差异失败。执行 Spotless 统一行尾后，没有语义改动；20:01 使用 `-DskipTests -Dmaven.jar.forceCreation=true install` 完成父 POM、core、files、starter 构建、格式检查及本地安装，不将跳过测试的安装命令算作另一轮测试。证据 `target-initialized-format-20260914.log`、`target-initialized-install-20260914.log`。
+5. **下游隔离兼容**：20:01，现有下游宿主使用本机新安装依赖，单独执行既有接入测试 **6 项全部通过**，覆盖原授权、当前业务身份、工具发现、文件、确认写入及 Skill；使用合成数据和隔离配置，不加载业务数据库或 Redis。下游仓库的本地日志为 `target/mcp-initialized-downstream-20260914.log`。本轮未改其业务源码，也未重新打包或部署宿主应用。
+
+最终 starter 构建 JAR 与本机 Maven 仓库 JAR 的 SHA-256 均为 `1A67F243B87B909076CBA5669D4C2E415386622A2E419475555217BB32909E07`。版本继续使用 `com.cogistra:mcp-bridge-spring-boot-starter:0.1.0-SNAPSHOT`。这两个 JAR 的一致性证明本机安装内容；下游应用包/镜像内容和线上状态尚未验证。
+
+复现组件定向验证与安装（Java 17，使用自身正常 Maven settings，不切换临时本地仓库）：
+
+```shell
+mvn -pl mcp-bridge-spring-boot-starter spotless:apply
+mvn -pl mcp-bridge-spring-boot-starter -am -Dtest=ServletMcpIntegrationTest,StarterDefaultSecurityIntegrationTest,ProtocolNamingIntegrationTest -Dsurefire.failIfNoSpecifiedTests=false -Dmaven.jar.forceCreation=true install
+```
+
+**本次发布状态及 SNAPSHOT 更新方式（2026-09-14 用户确认）**：本机验证完成后，用户明确要求推送远程 GitHub，本次源码交付分支为 [`codex/fix-mcp-initialized-notification`](https://github.com/CarbonFace/mcp-spring-bridge/tree/codex/fix-mcp-initialized-notification)。本次没有合并原发布分支 `codex/mcp-controller-adapter`，也未发布远程 Maven 制品或部署。既有公开基线 `29864a2` 不含本修复，不能把发送方提交号或旧基线当作修复版本。沿用[源码构建分发](releasing.md)：下游机器取得本次修复分支源码后，须记录实际提交号并执行上述 `install`，再重新构建宿主；仅加 `-U` 不能从未发布的远程 Maven 仓库取到本修复，无需删除整个 Maven 缓存或另建发布设施。
+
+新工作区获取入口（已有工作区须先保护未提交内容，不直接覆盖）：
+
+```shell
+git clone --branch codex/fix-mcp-initialized-notification --single-branch https://github.com/CarbonFace/mcp-spring-bridge.git
+cd mcp-spring-bridge
+git rev-parse HEAD
+```
+
+将实际提交号与维护者本次交付的修复提交核对，再执行本节的组件安装命令。源码发布与 Maven 远程发布、宿主重新打包和部署分别核验；GitHub 自动验证的实际结果以该提交对应运行记录为准，不使用此前基线的 CI 结果替代。
+
+下游构建时强制重新创建应用 JAR，例如 `mvn -DskipTests -Dmaven.jar.forceCreation=true package`（测试应另按宿主规则完成），再比对 `BOOT-INF/lib` 中组件与本地仓库 JAR 的 SHA-256。部署新包/镜像后，才由真实授权客户端核验 `initialize → notifications/initialized → tools/list` 和对应日志；仅执行握手及只读调用，不构造正式业务数据。异常时按宿主原发布流程回退上一应用版本。本次无需数据库迁移、配置调整或业务数据回滚。
+
 ## 尚未完成的验收
 
 - 人工浏览器视觉与辅助功能验收、真实桌面 MCP 客户端完整连接。

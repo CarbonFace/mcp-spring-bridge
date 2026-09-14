@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
@@ -89,6 +90,7 @@ public class ServletMcpIntegrationTest {
     facts.reset();
     aliases.target.set(1);
     accounts.revoked.clear();
+    accounts.revokeAfterResolution.set(false);
     SecurityContextHolder.clearContext();
   }
 
@@ -149,6 +151,85 @@ public class ServletMcpIntegrationTest {
                 .path("isError")
                 .asBoolean())
         .isTrue();
+    assertThat(facts.mutations.get()).isZero();
+  }
+
+  @Test
+  void initializedNotificationIsAuthenticatedAndDoesNotWarnOrChangeDiscovery() throws Exception {
+    var logger =
+        (ch.qos.logback.classic.Logger)
+            org.slf4j.LoggerFactory.getLogger(
+                "io.modelcontextprotocol.server.DefaultMcpStatelessServerHandler");
+    var events =
+        new ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>();
+    events.start();
+    logger.addAppender(events);
+    try {
+      byte[] notification =
+          json.writeValueAsBytes(
+              Map.of("jsonrpc", "2.0", "method", McpSchema.METHOD_NOTIFICATION_INITIALIZED));
+      mvc.perform(post("/mcp").contentType(MediaType.APPLICATION_JSON).content(notification))
+          .andExpect(status().isUnauthorized());
+      mvc.perform(
+              post("/mcp")
+                  .header("Authorization", "Bearer invalid")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(notification))
+          .andExpect(status().isUnauthorized());
+      rpc("alice", "initialize", initializeParameters());
+      Set<String> before = toolNames(rpc("alice", "tools/list", Map.of()));
+      mvc.perform(
+              post("/mcp")
+                  .header("Authorization", "Bearer alice")
+                  .header("MCP-Protocol-Version", "2025-06-18")
+                  .accept("application/json", "text/event-stream")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(notification))
+          .andExpect(status().isAccepted())
+          .andExpect(content().string(""));
+      assertThat(toolNames(rpc("alice", "tools/list", Map.of()))).isEqualTo(before);
+      assertThat(events.list)
+          .noneMatch(event -> event.getFormattedMessage().contains("notifications/initialized"));
+      mvc.perform(
+              post("/mcp")
+                  .header("Authorization", "Bearer alice")
+                  .header("MCP-Protocol-Version", "2025-06-18")
+                  .accept("application/json", "text/event-stream")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(
+                      json.writeValueAsBytes(
+                          Map.of("jsonrpc", "2.0", "method", "notifications/fixture_unknown"))))
+          .andExpect(status().isAccepted())
+          .andExpect(content().string(""));
+      assertThat(events.list)
+          .anyMatch(event -> event.getFormattedMessage().contains("notifications/fixture_unknown"));
+      assertThat(facts.mutations.get()).isZero();
+    } finally {
+      logger.detachAppender(events);
+      events.stop();
+    }
+  }
+
+  @Test
+  void initializedNotificationRejectsIdentityRevokedAfterRequestCapture() throws Exception {
+    rpc("alice", "initialize", initializeParameters());
+    // The HTTP capture succeeds, then the account is revoked before notification processing.
+    accounts.revokeAfterResolution.set(true);
+    mvc.perform(
+            post("/mcp")
+                .header("Authorization", "Bearer alice")
+                .header("MCP-Protocol-Version", "2025-06-18")
+                .accept("application/json", "text/event-stream")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    json.writeValueAsBytes(
+                        Map.of(
+                            "jsonrpc",
+                            "2.0",
+                            "method",
+                            McpSchema.METHOD_NOTIFICATION_INITIALIZED))))
+        // The SDK maps a failure during notification handling to 500, never an accepted 202.
+        .andExpect(status().isInternalServerError());
     assertThat(facts.mutations.get()).isZero();
   }
 
@@ -590,6 +671,7 @@ public class ServletMcpIntegrationTest {
 
   static class Accounts {
     final Set<String> revoked = ConcurrentHashMap.newKeySet();
+    final AtomicBoolean revokeAfterResolution = new AtomicBoolean();
 
     Jwt decode(String token) {
       if (!Set.of("alice", "bob", "alice-reader", "alice-empty").contains(token))
@@ -622,10 +704,17 @@ public class ServletMcpIntegrationTest {
       Set<String> scopes = scope == null || scope.isBlank() ? Set.of() : Set.of(scope.split(" "));
       Set<String> authorities = new HashSet<>();
       authentication.getAuthorities().forEach(value -> authorities.add(value.getAuthority()));
-      return new BridgePrincipal(
-          new BridgeIdentity(
-              jwt.getIssuer().toString(), jwt.getSubject(), "fixture-client", scopes, authorities),
-          authentication);
+      BridgePrincipal principal =
+          new BridgePrincipal(
+              new BridgeIdentity(
+                  jwt.getIssuer().toString(),
+                  jwt.getSubject(),
+                  "fixture-client",
+                  scopes,
+                  authorities),
+              authentication);
+      if (revokeAfterResolution.getAndSet(false)) revoked.add(jwt.getSubject());
+      return principal;
     }
   }
 
