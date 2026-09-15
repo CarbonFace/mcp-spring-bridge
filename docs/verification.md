@@ -144,11 +144,39 @@ git rev-parse HEAD
 
 下游构建时强制重新创建应用 JAR，例如 `mvn -DskipTests -Dmaven.jar.forceCreation=true package`（测试应另按宿主规则完成），再比对 `BOOT-INF/lib` 中组件与本地仓库 JAR 的 SHA-256。部署新包/镜像后，才由真实授权客户端核验 `initialize → notifications/initialized → tools/list` 和对应日志；仅执行握手及只读调用，不构造正式业务数据。异常时按宿主原发布流程回退上一应用版本。本次无需数据库迁移、配置调整或业务数据回滚。
 
+## 2026-09-15 动态知识快照与指定版本读取
+
+用户授权在独立公共组件实现通用动态指引，宿主业务、角色和持久化仍留在宿主。基于干净 `master` 的 `df698bd` 创建 `codex/knowledge-runtime-guidance`；没有改动宿主仓库文件、连接数据库或运行服务部署。新增 SPI、版本读取和资源边界见[动态知识说明](guidance.md#2026-09-15-runtime-versions)。
+
+2026-09-15 20:33，Java 17.0.19 / Maven 3.8.8 完成以下定向命令，**20 项通过，0 失败、0 错误、0 跳过**：
+
+```shell
+mvn -pl mcp-bridge-spring-boot-starter -am spotless:apply test -Dtest=GuidanceAssetsTest,DynamicGuidanceAssetsTest,GuidanceMcpIntegrationTest,DynamicGuidanceMcpIntegrationTest,ServletMcpIntegrationTest,ProtocolNamingIntegrationTest -Dsurefire.failIfNoSpecifiedTests=false
+```
+
+日志 `target-knowledge-guidance-tests.log`；报告在 starter 的 `target/surefire-reports/`。新增 5 个场景，保留原有 15 个相关场景，不将重复执行累计为新增验证：
+
+- 两个实际 Servlet/MCP 动态场景：初始未发布时工具仍注册、静态维护指引可发现，运行中发布后读取新版；正文/引用/私有 ZIP 固定旧版，两个入口共享完整包摘要，其他主体不能下载；缓存后撤权、依赖工具不可见或基线不兼容仍拒绝读取，静态和旧调用继续兼容。
+- 三个资源/历史场景：动态空源提前预留目录数和字节预算，超过预算/无效 UTF-8 拒绝；指定版不能跳新版，错误摘要或同版本内容漂移拒绝；大历史淘汰缓存后仍从宿主恢复准确旧内容，新 registry 重建保持相同版本/hash，导出字节防御拷贝有效。
+- 原有静态资产、静态 RPC 指引、Servlet 原工具/初始化/确认与协议命名 15 个场景保持通过。
+
+这些是合成身份、内存发布仓库和临时文件下的隔离验证。没有证明任何宿主数据库的发布事务、真实 GPT 确认交互、员工客户端更新或多实例持久指针一致性；这些属于宿主接入验收。没有创建 SQL、Git 提交、远程推送、Maven 远程发布或部署。
+
+20:35，在上述定向测试通过后，以 `mvn -pl mcp-bridge-spring-boot-starter -am -DskipTests -Dmaven.jar.forceCreation=true install` 强制重建并安装父 POM、core、files、starter；Spotless 检查通过。不将跳过测试的安装步骤记作第二次测试。日志 `target-knowledge-guidance-install.log`。构建 JAR 与本机 `D:/Maven_repository` 中 starter JAR 的 SHA-256 均为 `0F94427BFE358A5E18A5D6B8A10A8465145E10192490B0163478487D94483E4E`，坐标仍为 `com.cogistra:mcp-bridge-spring-boot-starter:0.1.0-SNAPSHOT`。这只证明本机公共依赖安装，宿主最终 JAR 和实际运行环境需分别核验。
+
+## 2026-09-16 源码分支交付
+
+用户明确授权提交与推送公共组件，并将增量提供给普通克隆使用的默认 `master`。交付前重新 fetch，GitHub 仓库仍为公开、默认分支为 `master`，远程基线仍为 `df698bded61768c41a8c3e7495a13bf20762400b`，没有待吸收的他人新增提交。本轮显式纳入通用动态指引源码、合成回归与公共使用文档；不包含宿主实现、角色、业务表、真实业务资料或凭据。
+
+交付路径为先推送 `codex/knowledge-runtime-guidance`，再将相同增量快进到 `master`，保留历史、不强推。当前 Java 改动与上一节 20 项验证及本机安装对应内容一致；本次只补公共交付文档，故不重复执行测试或本机安装。新的 GitHub 矩阵运行状态按本次提交核验，不用历史 CI 结果代替。[源码获取与构建](releasing.md)保持 `git clone` 后 `mvn install`，每台下游构建机器分别安装并记录源码提交号；未发布远程 Maven 制品。
+
+本段替代上一节“没有 Git 提交、远程推送”的本地阶段状态，不改变上一节的验证范围。没有部署公共样例或宿主应用，没有数据库操作，也没有真实 GPT 客户端自动安装/更新验收。
+
 ## 尚未完成的验收
 
 - 人工浏览器视觉与辅助功能验收、真实桌面 MCP 客户端完整连接。
 - 宿主业务数据库事务回执、外部服务幂等与结果恢复。
-- GitHub 上 Linux/Windows、Java 17/21 矩阵的实际执行；生产反代/证书、断电与介质损坏、容量/备份/保留策略。
-- GitHub 发布、远程 Maven 发布、部署、真实人员业务验收。
+- 本次提交 GitHub 上 Linux/Windows、Java 17/21 矩阵的实际结果需单独核对；生产反代/证书、断电与介质损坏、容量/备份/保留策略。
+- 远程 Maven 发布、部署、真实人员业务验收。
 
 Servlet fixtures 使用 MockMvc，独立样例另外使用真实本地回环 HTTP。没有监听公网端口；所有 `.invalid` 地址仅为合成标识，不发起外部业务请求。

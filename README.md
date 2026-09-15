@@ -2,9 +2,9 @@
 
 A Cogistra library for exposing selected Spring MVC endpoints and Spring AI MCP declarations through one authenticated MCP server.
 
-**Status:** `0.1.0-SNAPSHOT`, verified locally and on GitHub with Java 17/21 on Linux/Windows, including the initialization notification fix. The artifacts are not published to Maven Central. The repository is licensed under [MIT](LICENSE), copyright Cogistra. See [verification](docs/verification.md) for evidence and remaining acceptance work.
+**Status:** `0.1.0-SNAPSHOT`. The runtime guidance extension passed 20 targeted local checks on Java 17; earlier releases also passed GitHub verification with Java 17/21 on Linux/Windows. Check the current commit's CI separately. The artifacts are not published to Maven Central. The repository is licensed under [MIT](LICENSE), copyright Cogistra. See [verification](docs/verification.md) for evidence and remaining acceptance work.
 
-Source repository: [CarbonFace/mcp-spring-bridge](https://github.com/CarbonFace/mcp-spring-bridge), public, default delivery branch [`master`](https://github.com/CarbonFace/mcp-spring-bridge/tree/master). This branch includes initialization fix `f66a7c410ed0ec45ac41192944bd6e53c8c5356a`; the earlier `codex/*` branches remain as development history. Repository access and Maven artifact publication are separate; builders currently install the pinned source locally before building downstream applications. See [release instructions](docs/releasing.md).
+Source repository: [CarbonFace/mcp-spring-bridge](https://github.com/CarbonFace/mcp-spring-bridge), public, default delivery branch [`master`](https://github.com/CarbonFace/mcp-spring-bridge/tree/master). The 2026-09-16 source delivery adds immutable runtime guidance versions while retaining the initialization notification fix; the `codex/*` branches remain as development history. Repository access and Maven artifact publication are separate; builders currently install the pinned source locally before building downstream applications. See [release instructions](docs/releasing.md).
 
 ## What it provides
 
@@ -14,7 +14,7 @@ Source repository: [CarbonFace/mcp-spring-bridge](https://github.com/CarbonFace/
 - Prepared writes with immutable execution snapshots, revision/hash confirmation, durable receipts and conservative recovery after ambiguous failures.
 - An explicit host confirmed-write runtime extension for applications that commit a business action and its durable receipt in one database transaction, while retaining framework-generated tools and the fixed secured controller invocation.
 - Authenticated multipart and chunked uploads, reusable file references, ordinary URL results, and binary/Servlet-response exports.
-- Server-maintained Skill catalogs, progressive instruction reads and optional private bundles from the same registered host assets.
+- Server-maintained Skill catalogs, progressive instruction reads and optional private bundles from static assets or host-published immutable versions, with explicit version selection and bounded caching.
 - An optional OAuth authorization module connected to a host account SPI, plus an independent application with synthetic accounts.
 
 The library does not contain a business database, employee roles or domain-specific permissions. Applications continue to own their data scope, field permissions, optimistic versions, transactions and workflow rules.

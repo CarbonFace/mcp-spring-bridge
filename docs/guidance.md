@@ -1,5 +1,49 @@
 # Server-maintained business skills
 
+## 2026-09-15 runtime versions
+
+Hosts may now publish immutable instruction versions from their own persistent storage without restarting the MCP server. This is an opt-in extension: existing `BridgeGuidanceProvider` assets are still read once at startup, and applications without providers still omit the guidance tool. The library does not implement a host's publication endpoint, permissions, database, human confirmation, deployment or client installation.
+
+The implementation was developed on `codex/knowledge-runtime-guidance`, based on `df698bd`, and is included in the 2026-09-16 source delivery through the default `master` branch. Obtain and install that source before rebuilding a host. This is not a published Maven artifact or a deployed business feature. See [release instructions](releasing.md) and [verification](verification.md#2026-09-15-动态知识快照与指定版本读取) for delivery and the executed checks.
+
+```java
+public interface BridgeDynamicGuidanceProvider extends BridgeGuidanceProvider {
+  default List<BridgeGuidance> guidance() { return List.of(); }
+  List<BridgeGuidanceDescriptor> descriptors();
+  BridgeGuidanceVersion resolveVersion(String skillId, String requestedVersion);
+  BridgeGuidance load(String skillId, BridgeGuidanceVersion version);
+}
+
+public record BridgeGuidanceDescriptor(
+    String id, Set<String> requiredTools, int maxSourceBytes) {}
+
+public record BridgeGuidanceVersion(String version, String bundleSha256) {}
+```
+
+`descriptors()` registers stable skill identifiers and required tool names at startup. These descriptors make `bridge_get_guidance` available even when the dynamic host has not published its first release. Dynamic and static providers may be mixed; identifiers must be globally unique. A dynamic provider may also return additional static definitions from `guidance()`, provided their identifiers do not collide.
+
+Each authorized request calls `resolveVersion` before using any cached content. `requestedVersion == null` means the host's current published pointer; otherwise it means exactly the specified version. The host must check current baseline compatibility/existence on every resolution, including historical versions, and throw a safe `BridgeException` when unavailable. A resolver returning a different version for an explicit request is rejected with `GUIDANCE_VERSION_UNAVAILABLE`; the registry never falls forward to the latest version. Do not implement the current pointer as a stale process-local cache when several host instances share published storage.
+
+`load` returns the exact immutable `BridgeGuidance` associated with that version and ZIP digest. Its identifier, version, required tools, reserved source size, UTF-8 and ZIP SHA-256 are verified before the compiled snapshot can enter the cache. A corrupt/mismatched load returns `GUIDANCE_SNAPSHOT_INVALID`; changing bytes for an existing version is a host storage error, not a supported update. The host must persist immutable history and select a new version when files or deployment-specific settings change. The registry additionally rejects a different hash for the same version while that version is cached; persistence is the host's responsibility, not an unbounded library history ledger.
+
+`BridgeGuidanceSnapshot.of(definition)` is the common compiler for publishers and readers. It exposes `definition()`, `sourceBytes()`, `version()`, `bundleSha256()` and a defensively copied `bundleBytes()`. A host can persist these exact bytes and digest before atomically switching its published pointer. ZIPs use the same deterministic algorithm as static guidance. Two skill definitions with identical complete file maps produce identical ZIP bytes/hash even when their IDs and entrypoints differ. The library does not modify historical endpoint URLs or plugin manifest versions during later reads.
+
+Dynamic registration reserves `maxSourceBytes` for each declared skill, between 1 byte and 2 MiB. The sum of dynamic reservations and static actual source bytes must fit the existing 8 MiB registration limit; the combined count remains at most 64 skills. Every loaded version must fit its own reservation and the existing 128-file, 256 KiB/file and 2 MiB/skill limits. This reservation avoids temporarily empty providers or later larger releases bypassing the catalog limit. For two skills sharing a 2 MiB bundle, reserve 2 MiB for each, just as static registration counts each definition's assets.
+
+The compiled dynamic cache is an access-ordered cache limited to 64 snapshots and 8 MiB of source bytes, keyed by skill ID, version and ZIP digest. Old entries are evicted and can be loaded again from host history. The cache also holds bounded derived text and ZIP bytes, so its source-byte limit is not a claim of exact JVM heap usage. Static snapshots retain their original registration behavior. No authorization outcome, current pointer or baseline compatibility result is cached. Required tool visibility and provider `available()` run on each catalog/body/section/bundle request, including cache hits.
+
+### Version-aware client reads
+
+The existing four request forms below remain supported. Add `"version":"<returned-version>"` to a body, section or bundle request to fix the selected release. A version without `skillId` is invalid. A static skill accepts its registered version and rejects any other version. Every response is internally consistent; clients omitting the version keep request compatibility but must compare returned versions and re-read if they need consistency across several calls. Already-loaded conversation text and personally installed files do not change automatically when the server publishes a release.
+
+If an authorized dynamic skill is not initialized, incompatible or otherwise returns a safe `BridgeException`, its direct read returns that error. A catalog response lists other usable skills normally and adds `unavailableSkills: [{id, code, message}]` for the affected authorized entries. This lets a separately registered static maintenance guide remain discoverable. When there are no such errors the response remains `{"skills":[...]}`. Denied/hidden skills do not appear in either list, and availability exceptions still fail closed.
+
+### Host rollout and recovery
+
+First install the updated component locally and rebuild the host; existing static providers need no configuration or database changes. A host enabling dynamic maintenance must separately implement durable publication, atomic pointer switching, confirmation, compatibility, backup and limits. Registration reserves resources but does not read or initialize a host database. Runtime resolution and loading occur on demand. A host restart must read its existing published pointer rather than overwrite storage from packaged assets; this behavior cannot be enforced by the generic component.
+
+Roll back a host integration using its compatible release and stored version history. A business publication rollback selects a new immutable host release; it is not deletion of history or rebuilding the entire MCP server. A temporarily unavailable current version returns the host's safe error and does not silently substitute an old static package. File export still uses the existing private owner/client/TTL/quota mechanism, and export failure does not undo the host's already-committed publication.
+
 ## 2026-09-13 decision and behavior
 
 The host maintains Skill instructions in its repository and packages that same source with its application. Previously the starter had no instruction catalog or asset distribution extension. It now discovers `BridgeGuidanceProvider` beans and publishes one read tool, `bridge_get_guidance`, when at least one valid Skill is registered. Applications without providers retain their previous tool set and initialization instructions.
@@ -27,7 +71,7 @@ public record BridgeGuidance(
 
 The generic tool remains discoverable to identities allowed by its ordinary system policy when their applicable catalog is empty; their catalog returns `{"skills":[]}`. Direct reads or exports of unknown/denied skills return the same controlled `GUIDANCE_UNAVAILABLE` result. `mcp.bridge.tools.bridge_get_guidance` can restrict scopes/authorities or disable this optional system tool using the existing configuration mechanism. A disabled tool does not contribute the initialization pointer. There is no new business role, account store or authorization bypass.
 
-Use one source directory for both runtime classpath assets and optional locally distributed plugin sources. Updating content requires rebuilding/restarting the host; this version does not watch files or remotely hot-install instructions. Change the host version when content changes. SHA-256 hashes identify the actual bytes, including any deployment-specific metadata the host deliberately produces.
+For static providers, use one source directory for both runtime classpath assets and optional locally distributed plugin sources. Updating those packaged assets requires rebuilding/restarting the host. Neither provider mode watches arbitrary files or remotely installs client instructions. Change the content version when its files change. SHA-256 hashes identify the actual bytes, including any deployment-specific metadata the host deliberately produces. The opt-in runtime provider described above supplies published versions without replacing this static behavior.
 
 ## One tool, four requests
 
@@ -56,4 +100,4 @@ Permission changes immediately affect subsequent guidance requests. An already-c
 
 See the dated entry in [verification](verification.md) for actual commands and results. Isolated Servlet/SDK tests use synthetic accounts, in-memory fixture facts and temporary private files. They cover catalog/body/reference text, equal structured/text results, archive completeness/hash, denied reads/downloads, current permissions, malformed arguments, default no-provider compatibility and source/path bounds. The asset scenario also checks cross-timezone reproducibility and file-disabled online reads.
 
-No database table or migration is added. Source and local Maven artifacts only: no commit, remote publication, deployment, employee installation or real GPT acceptance is claimed. Confirming actual automatic Skill discovery, employee consent behavior and supported client installation remains a separate client acceptance step.
+No database table or migration is added. The source delivery and local Maven installation are recorded in [release instructions](releasing.md); no remote Maven artifact, deployment, employee installation or real GPT acceptance is claimed. Confirming actual automatic Skill discovery, employee consent behavior and supported client installation remains a separate client acceptance step.

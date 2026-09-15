@@ -3,7 +3,7 @@ package com.cogistra.mcpbridge.guidance;
 import com.cogistra.mcpbridge.api.BridgePrincipal;
 import java.util.List;
 
-/** Hosts supply trusted build assets; current business permissions remain a host decision. */
+/** Hosts supply trusted assets; runtime sources use BridgeDynamicGuidanceProvider. */
 public interface BridgeGuidanceProvider {
   List<BridgeGuidance> guidance();
 

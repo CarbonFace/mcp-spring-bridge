@@ -1,8 +1,8 @@
 # GitHub 与 Maven 发布准备
 
-## 当前源码交付入口（2026-09-14）
+## 当前源码交付入口（2026-09-16）
 
-用户要求公共组件通过 `master` 提供给其他接入者。本仓库公开，默认交付分支为 [`master`](https://github.com/CarbonFace/mcp-spring-bridge/tree/master)，包含已验证的初始化通知修复 `f66a7c410ed0ec45ac41192944bd6e53c8c5356a`。修复从原默认分支 `codex/mcp-controller-adapter` 快进接入完整历史；原开发分支保留，不改写或删除历史。普通克隆不再要求指定某个修复分支。
+用户要求公共组件通过 `master` 提供给其他接入者。本仓库公开，默认交付分支为 [`master`](https://github.com/CarbonFace/mcp-spring-bridge/tree/master)。2026-09-16 源码交付新增[动态不可变知识快照与指定版本读取](guidance.md)，并保留已验证的初始化通知修复 `f66a7c410ed0ec45ac41192944bd6e53c8c5356a`。本轮开发分支为 `codex/knowledge-runtime-guidance`，基线 `df698bd`；推送前重新获取远程，默认分支未发生漂移。增量先交付功能分支，再快进默认 `master`；旧开发分支与完整历史保留，不强推、不删除。普通克隆无需指定功能分支。
 
 ```shell
 git clone https://github.com/CarbonFace/mcp-spring-bridge.git
@@ -15,9 +15,11 @@ mvn install
 
 当前仍为 `com.cogistra:mcp-bridge-spring-boot-starter:0.1.0-SNAPSHOT`，**未发布远程 Maven 制品**。这意味着源码已可供其他 Spring Boot 项目构建接入，但还不能只填写依赖坐标就从 Maven Central 下载。宿主仍需配置真实身份验证和业务权限；组件的隔离验证不替代宿主的真实环境验收。下游更新同名 SNAPSHOT 后必须重新打包并部署应用才会在运行环境生效。
 
-修复提交的 [GitHub 验证](https://github.com/CarbonFace/mcp-spring-bridge/actions/runs/34843607883) 已全部通过：Java 17/21 × Ubuntu/Windows 四个任务成功。调整默认分支和使用说明未改变运行时代码；`master` 上后续运行结果按对应提交单独核验。本次未发布 Maven、部署服务或操作业务数据库。
+动态指引增量在 Java 17.0.19 上已有 20 项定向验证及本机安装证据，见[2026-09-15 验证记录](verification.md#2026-09-15-动态知识快照与指定版本读取)。本次交付没有再改变这些 Java 源码，远程基线也未漂移，因此复用该验证，不将再次提交和推送计作新一轮测试。GitHub 会对本次提交运行 Java 17/21 × Ubuntu/Windows 隔离验证，实际结果应查看对应提交，不能沿用旧提交的绿色状态。此次没有发布 Maven 制品、部署服务或操作宿主业务数据库。
 
 ## 历史发布记录
+
+2026-09-14：初始化通知修复已交付默认 `master`；修复提交的 [GitHub 验证](https://github.com/CarbonFace/mcp-spring-bridge/actions/runs/34843607883) 在 Java 17/21 × Ubuntu/Windows 四个任务全部通过。它是历史修复的验证记录，不代表 2026-09-16 增量的 CI 结果。
 
 **2026-09-13 发布调整（分支入口已由上方 2026-09-14 规则替代）：用户已授权推送到其 GitHub，源码仓库为 `https://github.com/CarbonFace/mcp-spring-bridge`，保持 Cogistra / MIT 归属。初始私有，随后按用户要求改为公开，方便同事获取源码构建；已通过不带认证的 GitHub API 请求验证可访问且 `private=false`。当时发布分支为 `codex/mcp-controller-adapter`，首次代码提交 `c037bf575f6460abcbd88e1caeebcf5b2d44b034` 已推送并核对远程一致。Maven 制品未发布，获取源码后仍须先执行本地 install。**
 

@@ -431,6 +431,16 @@ public final class BridgeToolCatalog {
         "skillId",
         json.createObjectNode().put("type", "string").put("minLength", 1).put("maxLength", 64));
     fields.set(
+        "version",
+        json.createObjectNode()
+            .put("type", "string")
+            .put("minLength", 1)
+            .put("maxLength", 64)
+            .put("pattern", "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+            .put(
+                "description",
+                "Exact version returned by the catalog or body; omit only to read the current version"));
+    fields.set(
         "section",
         json.createObjectNode()
             .put("type", "string")
@@ -444,7 +454,7 @@ public final class BridgeToolCatalog {
     fields.set("format", format);
     system(
         BridgeGuidanceRegistry.TOOL_NAME,
-        "Read current server-maintained business skills. Use {} for the available catalog; skillId for the complete SKILL; skillId plus section for a listed reference; skillId plus format=bundle for an optional private ZIP."
+        "Read server-maintained business skills. Use {} for the available catalog and any unavailableSkills diagnostics; skillId for the complete SKILL; skillId plus section for a listed reference; skillId plus format=bundle for an optional private ZIP. Carry version to keep later reads on that exact published snapshot."
             + BridgeGuidanceRegistry.NAVIGATION,
         schema,
         AuditEvent.Phase.READ,
